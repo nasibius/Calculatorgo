@@ -38,6 +38,30 @@ func getCalculations(c echo.Context) error {
 	return c.JSON(http.StatusOK, calculations)
 }
 
+func patchCalculations(c echo.Context) error {
+	id := c.Param("id")
+
+	var req CalculationRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request"})
+	}
+
+	result, err := calculateExpression(req.Expression)
+
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid expression"})
+	}
+
+	for i, calculation := range calculations {
+		if calculation.ID == id {
+			calculations[i].Expression = req.Expression
+			calculations[i].Result = result
+			return c.JSON(http.StatusOK, calculations[i])
+		}
+	}
+	return c.JSON(http.StatusBadRequest, map[string]string{"error": "Calculation not foun"})
+}
+
 func postCalculations(c echo.Context) error {
 	var req CalculationRequest
 	err := c.Bind(&req)
@@ -69,5 +93,6 @@ func main() {
 
 	e.GET("/calculations", getCalculations)
 	e.POST("/calculations", postCalculations)
+	e.PATCH("/calculations/:id", patchCalculations)
 	e.Start("localhost:8080")
 }
